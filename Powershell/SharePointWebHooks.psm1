@@ -209,7 +209,7 @@ function Set-NavigationNode {
     Write-Output $NavigationItem
 }
 
-function Set-RequestList {
+function Set-Template {
     Write-Information -MessageData:"Applying Template For WebHook Example Lists"
     Apply-PnPProvisioningTemplate -Path:"$PSScriptRoot\Templates\ExampleLists.xml" -verbose
 }
@@ -318,4 +318,55 @@ function Get-Permissions {
     }
 
     Write-Output $Permissions
+}
+
+function Set-OriginForAzureFunction {
+    param (
+        [Parameter(Mandatory)]
+        [string]
+        $FunctionAppIdentifier,
+        [Parameter(Mandatory)]
+        [string[]]
+        $Origins
+
+    )
+    $Origins | ForEach-Object {
+        $origin = $PSItem
+        $ExistOrigin = Invoke-AzCommand -Command:"az functionapp cors show --name $FunctionAppIdentifier --query ""allowedOrigins | [?contains(@, '$origin')]""" | ConvertFrom-Json
+
+        if (-not $ExistOrigin) {
+            Write-Verbose -Message:"Adding the $FunctionAppIdentifier CORS Value $origin"
+            Invoke-AzCommand -Command:"az functionapp cors add --name $FunctionAppIdentifier --allowed-origins $origin" | Out-Null
+        }
+    }
+}
+
+function Set-WebHook {
+    param(
+        [Parameter(Mandatory)]
+        [string]$List,
+        [Parameter(Mandatory)]
+        [string]$ServerNotificationUrl,
+        [Parameter(Mandatory)]
+        [string]$ClientState,
+        [Parameter(Mandatory)]
+        [int]$ExpiresInDays
+    )
+
+    Write-Information -MessageData:"Looking for existing Webhook"
+    $WebHooks = Get-PnPWebhookSubscriptions -List:$list 
+    $WebHook = $webHooks | Where-Object { $_.NotificationUrl -eq $ServerNotificationUrl }
+
+    $ExpiredDate = (Get-Date).AddDays($ExpiresInDays)
+
+    #Set
+    if ($WebHook) {
+        Write-Information -MessageData:"WebHook found, updating Expired Date to $ExpiredDate"
+        Set-PnPWebhookSubscription -List:$List -Subscription:$WebHook -NotificationUrl:$ServerNotificationUrl -ExpirationDate:$ExpiredDate
+    }
+    else {
+        #Add
+        Write-Information -MessageData:"Adding new Webhook, with expired date $ExpiredDate"
+        Add-PnPWebhookSubscription -List:$List -NotificationUrl:$ServerNotificationUrl -ExpirationDate:$ExpiredDate -ClientState:$ClientState
+    }
 }

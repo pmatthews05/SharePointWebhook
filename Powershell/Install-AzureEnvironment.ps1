@@ -35,9 +35,9 @@ $InformationPreference = 'Continue'
 
 
 Import-Module -Name:"$PSScriptRoot\SharePointWebHooks" -Force -ArgumentList:@(
-    $ErrorActionPreference,
-    $InformationPreference,
-    $VerbosePreference
+	$ErrorActionPreference,
+	$InformationPreference,
+	$VerbosePreference
 )
 
 Write-Information "Setting the Azure CLI defaults..."
@@ -62,6 +62,20 @@ $appInsights = Invoke-AzCommand -Command:"az resource create --resource-type 'Mi
 
 Invoke-AzCommand -Command:"az functionapp create --name ""$Identifier"" --storage-account ""$StorageAccountName"" --consumption-plan-location ""$Location"" --runtime ""dotnet"" --app-insights '$Identifier' --app-insights-key '$($appInsights.properties.InstrumentationKey)'"
 
+
+Write-Information -MessageData:"Assigning the $Identifier function app identity."
+$identityJson = Invoke-AzCommand -Command:"az webapp identity assign --name ""$Identifier""" | ConvertFrom-Json
+
+Write-Information -MessageData:"Setting the $KeyVaultName key vault access policy for the Azure Function passed in..."
+Invoke-AzCommand -Command:"az keyvault set-policy --name $KeyVaultName --key-permissions get list --secret-permissions get list --certificate-permissions get list --object-id $($identityJson.principalId)" | Out-Null
+
+Write-Information "Updating the Azure Function Configuration Settings"
+az webapp config appsettings set --name $Identifier --settings KeyVaultName=$KeyVaultName Tenant=$Environment CertificateName=$Identifier FUNCTIONS_EXTENSION_VERSION=~1 | Out-Null
+
+Write-Information "Updating Azure Function Origins"
+[string[]]$origins = "https://$Environment.sharepoint.com"
+Set-OriginForAzureFunction -FunctionAppIdentifier:$Identifier -Origins:$origins
+ 
 Write-Information "Create an Application Registration"
 $AppReg = Invoke-AzCommand -Command:"az ad app create --display-name ""$($Identifier)""" | ConvertFrom-Json
 

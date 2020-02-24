@@ -25,11 +25,14 @@ $identity = "$Environment-$Name"
 Import-Module -Name:"$PSScriptRoot\SharePointWebHooks" -Force -ArgumentList:@($ErrorActionPreference, $InformationPreference, $VerbosePreference)
 
 #Create SharePoint Lists
-Set-RequestList
+Write-Information -MessageData:"Applying SharePoint Template..."
+Set-Template
 
+$WebServerRelativeUrl = (Get-PnpWeb).ServerRelativeUrl
 #Add to Left navigation
-Set-NavigationNode -Title:"WebHook Example 1" -Location:"QuickLaunch" -Url:"/Lists/WebHook Example1"
-Set-NavigationNode -Title:"WebHook Example 2" -Location:"QuickLaunch" -Url:"/Lists/WebHook Example2"
+Write-Information -MessageData:"Updating Quicklaunch Navigation..."
+Set-NavigationNode -Title:"WebHook Example 1" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example1"
+Set-NavigationNode -Title:"WebHook Example 2" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example2"
 
 $webHookUrl = "https://$identity.azurewebsites.net/api/SharePointWebHook"
 
