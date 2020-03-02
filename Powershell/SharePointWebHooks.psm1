@@ -50,6 +50,71 @@ function Invoke-AzCommand {
     }
 }
 
+function Install-PnPPowerShell {
+    Write-Information -MessageData:"Getting if the SharePoint PnP PowerShell Online module is available..."
+    If (-not (Get-Module SharePointPnPPowerShellOnline)) {
+        Write-Information -MessageData:"Installing the NuGet package provider..."
+        Install-PackageProvider -Name:NuGet -Force -Scope:CurrentUser
+
+        Write-Information -MessageData:"Installing the SharePoint PnP PowerShell Online module..."
+        Install-Module SharePointPnPPowerShellOnline -Scope:CurrentUser -Force    
+    }
+    
+    if ($VerbosePreference) {
+        Set-PnPTraceLog -On -Level:Debug
+    }
+    else {
+        Set-PnPTraceLog -Off
+    }
+}
+
+function Connect-SharePointAsAppToken {
+    param(
+        [Parameter(Mandatory)]
+        [String]
+        $ClientId,
+
+        [Parameter(Mandatory)]
+        [String]
+        $Tenant,
+        
+        [Parameter(Mandatory)]
+        [String]
+        $CertificateString,
+        
+        [Parameter(Mandatory)]
+        [String]
+        $SiteUrl
+    )
+
+    New-Item -Path:"$PSScriptRoot" -Name:"certificates" -ItemType:"directory" -Force
+
+    [string]$CertificateFilePath = "$PSScriptRoot/certificates/$([System.IO.Path]::GetRandomFileName()).pfx"
+
+    Write-Information -MessageData:"Storing the certificate..."
+    # Store App Principal certificate as a .pfx file
+    # Use code from https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/deploy/azure-key-vault?view=azure-devops
+    $CertificateBase64String = [System.Convert]::FromBase64String("$CertificateString")
+    $CertificateCollection = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+    $CertificateCollection.Import($CertificateBase64String, $null, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+    $Password = [System.Guid]::NewGuid().ToString()
+    $CertificateExport = $CertificateCollection.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pkcs12, $Password)
+    [System.IO.File]::WriteAllBytes($CertificateFilePath, $CertificateExport)
+
+    $SecurePassword = $Password | ConvertTo-SecureString -AsPlainText -Force
+
+    Write-Information -MessageData:"Connecting to the $SiteURL SharePoint site via the $ClientId App Token..."
+    $Connection = Connect-PnPOnline `
+        -Url:$SiteUrl `
+        -ClientId:$ClientId `
+        -Tenant:$Tenant `
+        -CertificatePath:$CertificateFilePath `
+        -CertificatePassword:$SecurePassword `
+        -ReturnConnection
+
+    Write-Output $Connection
+}
+
 function Set-SelfSignedCertificate {
     param(
         [Parameter(Mandatory)]
