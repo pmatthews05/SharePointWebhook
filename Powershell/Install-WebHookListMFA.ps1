@@ -64,8 +64,8 @@ $Success = Get-ServerPing -Url:"https://$Identifier.azurewebsites.net"
 
 if ($Success) {
     Write-Information -MessageData "Setting the webhook"
-    Set-WebHook -List:"WebHook Example 1" -ServerNotificationUrl $webHookUrl -ClientState "1241fe65-ce63-4ca3-8827-014ea2f93bd5" -ExpiresInDays 90
-    Set-WebHook -List:"WebHook Example 2" -ServerNotificationUrl $webHookUrl -ClientState "1241fe65-ce63-4ca3-8827-014ea2f93bd5" -ExpiresInDays 90
+    Set-WebHook -List:"WebHook Example1" -ServerNotificationUrl $webHookUrl -ClientState "1241fe65-ce63-4ca3-8827-014ea2f93bd5" -ExpiresInDays 90
+    Set-WebHook -List:"WebHook Example2" -ServerNotificationUrl $webHookUrl -ClientState "1241fe65-ce63-4ca3-8827-014ea2f93bd5" -ExpiresInDays 90
 }
 else {
     Write-Error "Unable to ping Azure WebSite https://$Identifier.azurewebsites.net to call the /api/SharePointWebHook."

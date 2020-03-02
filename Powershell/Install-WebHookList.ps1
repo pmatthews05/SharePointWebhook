@@ -31,8 +31,8 @@ Set-Template
 $WebServerRelativeUrl = (Get-PnpWeb).ServerRelativeUrl
 #Add to Left navigation
 Write-Information -MessageData:"Updating Quicklaunch Navigation..."
-Set-NavigationNode -Title:"WebHook Example 1" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example1"
-Set-NavigationNode -Title:"WebHook Example 2" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example2"
+Set-NavigationNode -Title:"WebHook Example1" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example1"
+Set-NavigationNode -Title:"WebHook Example2" -Location:"QuickLaunch" -Url:$WebServerRelativeUrl"/Lists/WebHook Example2"
 
 $webHookUrl = "https://$identity.azurewebsites.net/api/SharePointWebHook"
 
