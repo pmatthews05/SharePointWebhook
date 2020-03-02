@@ -14,7 +14,7 @@ namespace SharePointWebHook.AzureFunctions
     public static class ProcessResourceChange
     {
         [FunctionName("ProcessResourceChange")]
-        public static async Task RunAsync([QueueTrigger("processchange", Connection = "AzureWebJobsStorage")]WebhookNotification notificationModel, ILogger log)
+        public static async Task RunAsync([QueueTrigger("processchanges", Connection = "AzureWebJobsStorage")]WebhookNotification notificationModel, ILogger log)
         {
             log.LogInformation($"ProcesResourceChange queue trigger function process Site:{notificationModel.SiteUrl} Resource{notificationModel.Resource} ");
 
@@ -81,6 +81,7 @@ namespace SharePointWebHook.AzureFunctions
                     changeQuery.ChangeTokenStart = lastChangeToken;
 
                     ChangeCollection changes = list.GetChanges(changeQuery);
+                    clientContext.Load(list);
                     clientContext.Load(changes);
                     await clientContext.ExecuteQueryAsync();
 
@@ -93,7 +94,7 @@ namespace SharePointWebHook.AzureFunctions
 
                             if (change is ChangeItem item)
                             {
-                                log.LogInformation($"Change {change.ChangeType} on Item:{item.ItemId} Title:{item.Title} on List:{item.ListTitle} ActivityType:{item.ActivityType} by {item.EditorLoginName} Site:{notificationModel.SiteUrl}");
+                                log.LogInformation($"Change {change.ChangeType} on Item:{item.ItemId} on List:{list.Title} Site:{notificationModel.SiteUrl}");
                             }
                         }
 
